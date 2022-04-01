@@ -19,7 +19,12 @@ ACTIVE_LOG_FILTERS = [
   "^.*ETL: (Asset|Allocation)\[1(h|d)\]: run.* completed.*$",
   "^.*ETL: (Asset|Allocation): updated resource totals.*$",
   "^.*ETL: (Asset|Allocation)\[1(h|d)\]: Query.*$",
+  "^.*ETL: (Asset|Allocation)\[1(h|d)\]: SummaryQuery.*$",
   "^.*ComputeCostData\: Processing Query Data$",
+
+  # info logs
+  "^.*Spot Pricing Refresh scheduled in [0-9]+\.[0-9]+ minutes\.$",
+  "^.*Alert Configs Changed. Writing Updated Config to disk.$",
 ]
 
 
