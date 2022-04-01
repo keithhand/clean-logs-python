@@ -8,16 +8,17 @@ args = parser.parse_args()
 
 ACTIVE_LOG_FILTERS = [
   # remove timestamps
-  "^.{0,30}",
+  # TODO: re-add timestamps (it's here for de-dedupe)
+  "^[A-Z][0-9]{4}.{0,25}",
 
   # end outside window spam
   "^.*(node|disk) '.{0,50}' end outside window.*$",
 
   # success logs
-  "^.*ETL\: (Asset|Allocation)\: Save\: successfully saved.*$",
-  "^.*ETL\: (Asset|Allocation)\[1(h|d)\]\: run.* completed.*$",
-  "^.*ETL\: (Asset|Allocation)\: updated resource totals.*$",
-  "^.*ETL\: (Asset|Allocation)\[1(h|d)\]\: Query.*$",
+  "^.*ETL: (Asset|Allocation): Save: successfully saved.*$",
+  "^.*ETL: (Asset|Allocation)\[1(h|d)\]: run.* completed.*$",
+  "^.*ETL: (Asset|Allocation): updated resource totals.*$",
+  "^.*ETL: (Asset|Allocation)\[1(h|d)\]: Query.*$",
   "^.*ComputeCostData\: Processing Query Data$",
 ]
 
@@ -30,7 +31,7 @@ class Section:
     self.seperator = seperator
   def __str__(self):
     return s.section_type + ' section for ' + s.section_id + ' @ ' + str(s.line_num_start) + '...' + str(s.line_num_end)
-  def getLogs(self, num_of_lines = False):
+  def _getLogs(self, num_of_lines = False):
     start_line = self.line_num_start + 2
     end_line = start_line + num_of_lines if num_of_lines else self.line_num_end
     return bug_report[start_line:end_line]
@@ -68,6 +69,15 @@ class MiniSection(Section):
       self.section_type = 'unknown-mini'
       self.section_id = section_id.strip()
 
+  def getLogs(self, num_of_lines = False):
+    logs = self._getLogs(num_of_lines)
+    # apply regex filters to clean up logs
+    for log_filter in ACTIVE_LOG_FILTERS:
+      logs = [re.sub(log_filter, '', i) for i in logs]
+    # remove duplicates
+    logs = list(set(logs))
+    return logs
+
 
 primary_sections=[]
 mini_sections=[]
@@ -88,10 +98,9 @@ with open(args.bug_report_file) as bug_report_file:
           mini_sections[-1].line_num_end = new_section.line_num_start - 1
         mini_sections.append(new_section)
 
-def cleanCostModelLogs(cost_model_section):
-  print(cost_model_section.getLogs(10))
-
 # find last line in each section
 for i, s in enumerate(mini_sections):
   if s.section_id == 'cost-model':
-    cleanCostModelLogs(s)
+    with open('cost-model.txt', 'w') as f:
+      for log in s.getLogs():
+        f.write('%s' % log)
