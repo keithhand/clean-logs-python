@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse, re, linecache
+from sections import PrimarySection, MiniSection
 
 p_description = 'Clean kubecost-bug-report files.'
 parser = argparse.ArgumentParser(description=p_description)
@@ -11,7 +12,7 @@ ACTIVE_LOG_FILTERS = [
   # TODO: re-add timestamps (it's here for de-dedupe)
   "^[A-Z][0-9]{4}.{0,25}",
 
-  # end outside window spam
+  # end outside window span
   "^.*(node|disk) '.{0,50}' end outside window.*$",
 
   # success logs
@@ -27,63 +28,7 @@ ACTIVE_LOG_FILTERS = [
   "^.*Alert Configs Changed. Writing Updated Config to disk.$",
 ]
 
-
 bug_report = None
-class Section:
-  def __init__(self, line_num, seperator):
-    self.line_num_start = line_num
-    self.line_num_end = 'EOF'
-    self.seperator = seperator
-  def __str__(self):
-    return s.section_type + ' section for ' + s.section_id + ' @ ' + str(s.line_num_start) + '...' + str(s.line_num_end)
-  def _getLogs(self, num_of_lines = False):
-    start_line = self.line_num_start + 2
-    end_line = start_line + num_of_lines if num_of_lines else self.line_num_end
-    return bug_report[start_line:end_line]
-
-
-class PrimarySection(Section):
-  SEPERATOR = '=' * 128 + '\n'
-  def __init__(self, line_num, section_id):
-    Section.__init__(self, line_num, self.SEPERATOR)
-    self.section_id = section_id.strip()
-    self.section_type = 'primary'
-
-
-class MiniSection(Section):
-  POD_REGEXES = [
-    'cost-analyzer',
-    'prometheus-server',
-    'thanos-query',
-    'thanos-sidecar',
-    'thanos-compact',
-    'thanos-store',
-  ]
-  SEPERATOR = '+' + '-' * 85 + '\n'
-  def __init__(self, line_num, section_id):
-    Section.__init__(self, line_num, self.SEPERATOR)
-    self.formatSectionId(section_id)
-
-  def formatSectionId(self, section_id):
-    try:
-      search_term = "^\| \*\*\:kubecost-v2-({})-.*\:(.*)$".format('|'.join(self.POD_REGEXES))
-      found = re.search(search_term, section_id)
-      self.section_type = found.group(1)
-      self.section_id = found.group(2)
-    except:
-      self.section_type = 'unknown-mini'
-      self.section_id = section_id.strip()
-
-  def getLogs(self, num_of_lines = False):
-    logs = self._getLogs(num_of_lines)
-    # apply regex filters to clean up logs
-    for log_filter in ACTIVE_LOG_FILTERS:
-      logs = [re.sub(log_filter, '', i) for i in logs]
-    # remove duplicates
-    logs = list(set(logs))
-    return logs
-
-
 primary_sections=[]
 mini_sections=[]
 with open(args.bug_report_file) as bug_report_file:
@@ -103,8 +48,8 @@ with open(args.bug_report_file) as bug_report_file:
           mini_sections[-1].line_num_end = new_section.line_num_start - 1
         mini_sections.append(new_section)
 
-# find last line in each section
 for i, s in enumerate(mini_sections):
+  # print cost-model section to .txt
   if s.section_id == 'cost-model':
     with open('cost-model.txt', 'w') as f:
       for log in s.getLogs():
