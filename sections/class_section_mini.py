@@ -16,10 +16,13 @@ ACTIVE_LOG_FILTERS = [
   "^.*ETL: (Asset|Allocation)\[1(h|d)\]: Query.*$",
   "^.*ETL: (Asset|Allocation)\[1(h|d)\]: SummaryQuery.*$",
   "^.*ComputeCostData\: Processing Query Data$",
+  "^.*ETL: (Asset|Allocation)\[1(h|d)\]: build\[.*\]: from backup: coverage.*$",
 
   # info logs
   "^.*Spot Pricing Refresh scheduled in [0-9]+\.[0-9]+ minutes\.$",
   "^.*Alert Configs Changed. Writing Updated Config to disk.$",
+  "^.*ETL: detected valid file: .*$",
+  "^.*Found configmap pricing-configs, watching\.\.\.$",
 ]
 
 class MiniSection(Section):
