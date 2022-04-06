@@ -52,5 +52,5 @@ for i, s in enumerate(mini_sections):
   # print cost-model section to .txt
   if s.section_id == 'cost-model':
     with open('cost-model.txt', 'w') as f:
-      for log in s.getLogs():
+      for log in s.getLogs(bug_report):
         f.write('%s' % log)
